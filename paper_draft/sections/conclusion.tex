@@ -1,0 +1,6 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented \benchmark, a corpus-grounded benchmark for diluted textual steganography that separates binary detection from exact message recovery. Across \wikitext, \imdb, and \agnews, both \gptfourone and \gptfive handled obvious and dense schemes substantially better than diluted keyword-triggered encoding. The central finding is simple: dilution reduces extraction reliability sharply before detection collapses.
+
+The main takeaway is that current LLM-based monitors can often sense that a passage is suspicious without recovering the payload that explains why. Future work should increase sample size, test more model families, vary message length and trigger ambiguity independently, and compare scheme-aware prompts with open-ended steganalysis. A stronger next benchmark should also add paraphrase and edit attacks to measure whether diluted signals remain fragile once the cover text is perturbed.

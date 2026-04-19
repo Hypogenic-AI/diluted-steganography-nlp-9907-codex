@@ -1,0 +1,25 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Hidden communication in text becomes more concerning as text generation becomes cheaper, longer, and easier to automate. The hardest regime is not the obvious acrostic or the dense trigger rule. It is the low-density regime in which a message is spread across a long passage, mixed with distractors, and embedded in otherwise ordinary language. That is the regime a monitor would need to handle in practice.
+
+\para{Why does this problem matter?} Recent work has made linguistic steganography more fluent and less statistically conspicuous by using masked language models, adaptive generative coding, and LLM-based generation \cite{ueoka2021masked,zhang2021provably,lin2024zeroshot,wu2024generative}. At the same time, newer steganalysis work shows that language-model-based detectors can outperform older classifiers in some settings \cite{yi2021efficient,bai2024nextgen}. But these two threads rarely meet on the specific question we care about here: whether present-day LLMs can recover a payload when the evidence for that payload is sparse and dispersed rather than locally obvious.
+
+\para{What is missing?} Prior work mostly studies dense generation schemes, edit-based local changes, or cover-versus-stego detection \cite{ueoka2021masked,lin2024zeroshot,bai2024nextgen}. Frontier-model safety papers ask whether models can hide or pass messages under stronger coordination assumptions, but they do not isolate dilution as an experimental variable in a corpus-grounded extraction benchmark \cite{perry2025robust,karpov2025potentials,zolkowski2025early}. That leaves a direct benchmark gap: no existing evaluation in our review separately measures detection and exact payload recovery while sweeping from obvious structure to sparse keyword-conditioned rules.
+
+\para{Our approach.} We address that gap with \benchmark, a controlled benchmark built from \wikitext, \imdb, and \agnews. Each cover passage is turned into one of three schemes: \acrostic, \densekw, or \dilutedkw. The diluted setting keeps the same basic decoding rule as the dense setting but spreads trigger positions across a much longer passage and introduces distractor variants such as \texttt{signals} and \texttt{signal-based}. We evaluate \gptfourone and \gptfive with separate prompts for detection and extraction, which lets us ask whether a model can suspect hidden structure before it can decode the six-letter secret.
+
+\para{What do we find?} The main pattern is stable across both models. \gptfourone reaches exact recovery rates of 0.67 on \acrostic, 0.75 on \densekw, and 0.25 on \dilutedkw. \gptfive shows the same ordering at 0.58, 0.50, and 0.17. Detection remains materially stronger than exact recovery in the diluted setting: for example, \gptfourone still achieves 0.79 detection accuracy on \dilutedkw while recovering only 25\% of secrets exactly.
+
+Our contributions are:
+\begin{itemize}
+\setlength{\leftmargin}{0pt}
+\setlength{\itemsep}{0pt}
+\setlength{\topsep}{0pt}
+    \item We introduce a corpus-grounded benchmark that isolates signal dilution while separating detection from extraction.
+    \item We evaluate two current OpenAI API models under fixed prompts and show that diluted keyword signals are consistently harder to recover than obvious or dense schemes.
+    \item We quantify corpus effects, statistical uncertainty, and pairwise differences, including a significant dense-versus-diluted gap for \gptfourone.
+    \item We document practical failure modes showing that current LLM monitors often detect suspicious structure without recovering the payload itself.
+\end{itemize}
+
+The rest of the paper reviews related work in \secref{sec:related_work}, describes the benchmark and evaluation protocol in \secref{sec:methodology}, presents quantitative results in \secref{sec:results}, and discusses implications and limitations in \secref{sec:discussion}.

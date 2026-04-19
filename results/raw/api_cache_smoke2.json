@@ -1,0 +1,18 @@
+{
+  "050cb1b54dae7c5384973a31887280bea8e8745baa14a80603c35dc7df9d9f30": {
+    "text": "```json\n{\"ok\": true}\n```",
+    "usage": {
+      "input_tokens": 16,
+      "input_tokens_details": {
+        "cached_tokens": 0
+      },
+      "output_tokens": 10,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 26
+    },
+    "response_id": "resp_0fb75189f2dff4f30069e55d2c5bbc8196a99ecc392e68efe5",
+    "created_at": 1776639277.981168
+  }
+}

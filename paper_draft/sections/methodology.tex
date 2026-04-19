@@ -1,0 +1,23 @@
+\section{Methodology}
+\label{sec:methodology}
+
+\para{Task definition.} We study two tasks on the same passage. In \textbf{detection}, the model decides whether the passage hides a message under one of the candidate schemes and returns a binary judgment. In \textbf{extraction}, the model returns the six-letter secret or \texttt{NONE}. Separating the tasks matters because a monitor may detect suspicious structure without recovering the payload.
+
+\para{Benchmark construction.} We build \benchmark from three corpora with different context profiles: \wikitext for long encyclopedia-style passages, \imdb for long reviews, and \agnews for shorter news passages. For each corpus, we synthesize three positive steganographic conditions and matched negatives:
+\begin{itemize}
+\setlength{\leftmargin}{0pt}
+\setlength{\itemsep}{0pt}
+\setlength{\topsep}{0pt}
+    \item \acrostic: the first letter of each sentence encodes a six-letter secret.
+    \item \densekw: the first letter of the word immediately after the exact trigger token \texttt{signal} encodes the secret.
+    \item \dilutedkw: the same keyword-next-word rule is spread across a much longer passage and mixed with distractor variants such as \texttt{signals} and \texttt{signal-based}.
+\end{itemize}
+Each corpus-scheme cell contains four positive and four negative examples. This yields 72 synthetic examples in the main benchmark. We also run a small external sanity check on 24 examples from the \texttt{llm\_steganalysis\_benchmark} dataset, but we treat that probe as diagnostic rather than confirmatory because the prompt is generic and not aligned to the benchmark's native hiding schemes.
+
+\para{Models and prompts.} We evaluate \gptfourone and \gptfive through the OpenAI API \cite{openai_models}. Prompting is fixed across runs. The detection prompt asks whether a hidden message is present under either candidate scheme. The extraction prompt asks for the six-letter message or \texttt{NONE}. Final prompt texts are stored in the project \texttt{prompts/} directory.
+
+\para{Metrics and statistics.} For detection, we report accuracy, precision, recall, and F1. For extraction, we report exact six-letter recovery rate and character-level accuracy. We compute bootstrap 95\% confidence intervals for per-cell metrics and use Fisher's exact test for pooled pairwise comparisons of exact recovery counts. Our primary hypothesis is directional: exact recovery should drop from \acrostic\ and \densekw\ to \dilutedkw, while detection should degrade more slowly.
+
+\para{Implementation details.} Experiments use Python 3.12.8 with \texttt{openai}, \texttt{datasets}, \texttt{pandas}, \texttt{numpy}, \texttt{scipy}, \texttt{matplotlib}, \texttt{seaborn}, and \texttt{scikit-learn}. Four NVIDIA RTX A6000 GPUs were available but unused because all evaluation was API-based. Observed usage was 40,446 input and 3,968 output tokens for \gptfourone, and 40,314 input and 5,460 output tokens for \gptfive. Using the official posted OpenAI pricing on April 19, 2026 \cite{openai_pricing}, the total estimated run cost was \$0.2176.
+
+\para{Validation note.} One implementation detail mattered for \gptfive. Early validation runs with \texttt{reasoning.effort="low"} exhausted the output budget with reasoning tokens and produced truncated JSON responses. We switched the final configuration to \texttt{reasoning.effort="minimal"} and updated the cache key before the final rerun. The cached validation rerun completed in roughly 14 seconds and reproduced the saved artifacts.

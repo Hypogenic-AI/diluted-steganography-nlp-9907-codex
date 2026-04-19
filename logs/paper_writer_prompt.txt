@@ -1,0 +1,824 @@
+You are an academic paper writer. Generate a complete NEURIPS style paper
+based on the experiment results provided.
+
+════════════════════════════════════════════════════════════════════════════════
+                         IMPORTANT: BEFORE YOU START
+════════════════════════════════════════════════════════════════════════════════
+
+Before writing any content, you MUST complete these steps:
+
+1. READ THE SKILL: Review the paper-writer skill at .codex/skills/paper-writer/SKILL.md
+2. READ THE STYLE GUIDE: Study templates/paper_writing/lab_style_guide.md carefully
+3. REVIEW EXAMPLES: Browse paper_examples/ for formatting and language patterns:
+   - Look at sections/1.introduction.tex for language style
+   - Look at tables/*.tex for table formatting
+   - Look at commands/*.tex for macro usage
+4. VERIFY COMMAND TEMPLATES: Command templates (math.tex, general.tex, macros.tex) are pre-copied to paper_draft/commands/
+
+CRITICAL: Reference example papers for FORMATTING and LANGUAGE STYLE only.
+Do NOT copy content, phrasing, or narrative structure from the example papers.
+The examples are in a different research domain - focus only on presentation style.
+
+════════════════════════════════════════════════════════════════════════════════
+                            EXPERIMENT REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+# REPORT: Diluted Steganography
+
+## 1. Executive Summary
+This study tested whether current LLMs can still detect and recover hidden messages when the signal is diluted across long passages instead of encoded in obvious local patterns. Using real OpenAI API models on a controlled benchmark built from `WikiText-2`, `IMDB`, and `AG News`, I compared acrostic encoding, dense keyword-trigger encoding, and diluted keyword-trigger encoding.
+
+The main result is consistent across both tested models: extraction degrades sharply under dilution, while detection degrades more slowly. `gpt-4.1` achieved exact recovery rates of `0.67` on acrostics, `0.75` on dense keyword encoding, and `0.25` on diluted keyword encoding. `gpt-5` showed the same ordering at `0.58`, `0.50`, and `0.17`. This supports the core hypothesis that diluted steganographic signals remain materially harder for LLMs to recover than obvious or denser schemes.
+
+Practically, this means current LLM-based monitors may still notice suspicious structure without reliably extracting the payload once the signal is sparse, dispersed, and mixed with ordinary text. That gap matters for both misuse analysis and robustness evaluation as synthetic text generation scales.
+
+## 2. Research Question &amp; Motivation
+
+### Research question
+How well do current LLMs detect and extract steganographic messages when the hidden signal is diluted from obvious acrostics to sparse keyword-conditioned rules embedded in natural cover text?
+
+### Why this matters
+Prior work on linguistic steganography has focused mostly on dense generation schemes, edit-based hiding, and cover-vs-stego classification. The literature review in this workspace identified a specific gap: no benchmark explicitly isolates signal dilution while separating detection from extraction. That gap matters because large-scale synthetic text makes sparse hidden signaling more feasible and harder to audit.
+
+## 3. Literature Review Summary
+The pre-gathered literature converged on three points:
+
+1. Modern linguistic steganography is good at preserving fluency and reducing obvious statistical artifacts.
+2. LLMs can outperform older classifiers in some steganalysis settings, but those evaluations usually target dense or structurally simple schemes.
+3. Recent frontier-model safety work suggests current models have limited covert capability on subtle tasks, but does not directly test diluted keyword-conditioned extraction.
+
+This project contributes a benchmark that explicitly sweeps density and context rather than testing only obvious schemes or generic cover-vs-stego detection.
+
+## 4. Methodology
+
+### Benchmark design
+I generated a synthetic benchmark from three local corpora:
+- `WikiText-2` for long, multi-sentence encyclopedia-like cover passages.
+- `IMDB` for long review text.
+- `AG News` for shorter news passages.
+
+For each corpus, I created:
+- `acrostic`: first letter of each sentence encodes a six-letter secret.
+- `keyword_dense`: first letter of the word immediately after exact token `signal` encodes the secret.
+- `keyword_diluted`: the same `signal` rule, but spread across a much longer passage with distractor variants like `signals` and `signal-based`.
+
+Each condition included matched negative controls. The main evaluation used `4` positive and `4` negative examples per corpus-condition cell, for `72` synthetic examples total. I also ran a small external sanity check on `24` examples from `datasets/llm_steganalysis_benchmark`, though that probe turned out not to be informative with a generic prompt.
+
+### Models and prompts
+Real API models were used throughout:
+- `gpt-4.1`
+- `gpt-5`
+
+Two prompt types were used:
+- Detection prompt: decide whether a passage hides a message under either candidate scheme.
+- Extraction prompt: return the six-letter message or `NONE`.
+
+Exact prompt texts are saved in `prompts/`.
+
+### Metrics
+- Detection: accuracy, precision, recall, F1.
+- Extraction: exact six-letter recovery rate and character-level accuracy.
+- Uncertainty: bootstrap 95% confidence intervals.
+- Pairwise comparison: Fisher exact tests on pooled exact-recovery counts.
+
+### Environment and hardware
+- Python `3.12.8`
+- GPUs available: `4 x NVIDIA RTX A6000`, but unused because this was API-based research
+- Core libraries: `openai`, `datasets`, `pandas`, `numpy`, `scipy`, `matplotlib`, `seaborn`, `scikit-learn`
+
+### Cost tracking
+Observed token usage:
+- `gpt-4.1`: `40,446` input tokens, `3,968` output tokens
+- `gpt-5`: `40,314` input tokens, `5,460` output tokens
+
+Using official OpenAI pricing accessed on 2026-04-19:
+- `gpt-5`: `$1.25 / 1M` input tokens and `$10.00 / 1M` output tokens
+- `gpt-4.1`: `$2.00 / 1M` input tokens and `$8.00 / 1M` output tokens
+
+Estimated run cost:
+- `gpt-4.1`: about `$0.1126`
+- `gpt-5`: about `$0.1050`
+- Total: about `$0.2176`
+
+One implementation detail mattered: `gpt-5` initially consumed the output budget with reasoning tokens when run at `reasoning.effort=&#34;low&#34;`. During validation I switched to `reasoning.effort=&#34;minimal&#34;` and updated the cache key so the final results reflect complete JSON answers rather than truncated responses.
+
+## 5. Results
+
+### Main pooled results
+
+| Model | Scheme | Detection Accuracy | Exact Recovery | Character Accuracy |
+|---|---:|---:|---:|---:|
+| `gpt-4.1` | acrostic | 0.875 | 0.667 | 0.861 |
+| `gpt-4.1` | keyword_dense | 0.917 | 0.750 | 0.958 |
+| `gpt-4.1` | keyword_diluted | 0.792 | 0.250 | 0.597 |
+| `gpt-5` | acrostic | 0.958 | 0.583 | 0.875 |
+| `gpt-5` | keyword_dense | 0.792 | 0.500 | 0.889 |
+| `gpt-5` | keyword_diluted | 0.750 | 0.167 | 0.486 |
+
+The main pattern is stable across both models: diluted extraction is much worse than obvious or dense extraction.
+
+### Statistical comparisons
+
+| Model | Comparison | Rate A | Rate B | Delta | Fisher p-value |
+|---|---|---:|---:|---:|---:|
+| `gpt-4.1` | acrostic vs diluted | 0.667 | 0.250 | 0.417 | 0.0995 |
+| `gpt-4.1` | dense vs diluted | 0.750 | 0.250 | 0.500 | 0.0391 |
+| `gpt-5` | acrostic vs diluted | 0.583 | 0.167 | 0.417 | 0.0894 |
+| `gpt-5` | dense vs diluted | 0.500 | 0.167 | 0.333 | 0.1930 |
+
+The strongest confirmatory result is for `gpt-4.1`, where dense keyword extraction significantly outperformed diluted extraction at this sample size.
+
+### Corpus effects
+
+Selected exact-recovery rates by corpus:
+
+| Model | Corpus | Acrostic | Dense | Diluted |
+|---|---|---:|---:|---:|
+| `gpt-4.1` | `ag_news` | 0.50 | 0.50 | 0.25 |
+| `gpt-4.1` | `imdb` | 0.50 | 0.75 | 0.00 |
+| `gpt-4.1` | `wikitext2` | 1.00 | 1.00 | 0.50 |
+| `gpt-5` | `ag_news` | 0.75 | 0.25 | 0.25 |
+| `gpt-5` | `imdb` | 0.25 | 0.75 | 0.25 |
+| `gpt-5` | `wikitext2` | 0.75 | 0.50 | 0.00 |
+
+Longer context did not uniformly help. `gpt-4.1` benefited from `WikiText-2` on the obvious and dense settings, but both models still struggled on diluted cases. `gpt-5` in particular dropped to `0.00` exact recovery on diluted `WikiText-2`.
+
+### Figures
+- [detection_accuracy_by_scheme.png](/workspaces/diluted-steganography-nlp-9907-codex/figures/detection_accuracy_by_scheme.png)
+- [extraction_exact_by_scheme.png](/workspaces/diluted-steganography-nlp-9907-codex/figures/extraction_exact_by_scheme.png)
+- [extraction_heatmap.png](/workspaces/diluted-steganography-nlp-9907-codex/figures/extraction_heatmap.png)
+
+### Output locations
+- Raw benchmark and model outputs: `results/raw/`
+- Aggregate summaries: `results/processed/`
+- Environment snapshot: [environment.json](/workspaces/diluted-steganography-nlp-9907-codex/results/processed/environment.json)
+
+## 6. Analysis &amp; Discussion
+
+### What the results show
+The hypothesis is supported. Both models handled obvious and denser schemes materially better than diluted ones, and detection remained stronger than exact payload extraction. That means the main failure mode under dilution is not total blindness to anomalous structure; it is incomplete recovery of the actual secret.
+
+### Model comparison
+`gpt-4.1` was more reliable than `gpt-5` on this benchmark. The largest gap appears on dense and diluted extraction, where `gpt-4.1` kept higher exact and character-level recovery. `gpt-5` still often detected hidden structure, but degraded more in exact recovery. This may reflect prompt sensitivity or the interaction between reasoning-model behavior and constrained JSON extraction.
+
+### Error taxonomy
+The dominant failure modes were:
+- False negatives on diluted passages, often returning `NONE`.
+- Near-miss decodes with one-letter substitutions or transpositions, such as `PRAIRA`, `QUARRY`, `EMBERB`, and `NELBUL`.
+- Greater brittleness on longer diluted passages, especially when distractor variants were present.
+
+Representative failures are saved in [extraction_failures.csv](/workspaces/diluted-steganography-nlp-9907-codex/results/processed/extraction_failures.csv).
+
+### External benchmark sanity check
+Both models scored about chance on the small external steganalysis slice. I do not treat that as evidence that they cannot detect steganography in general; it is more likely that the generic prompt was poorly aligned to those short benchmark examples, whereas the main benchmark supplied the specific candidate schemes. This external result is therefore a limitation, not part of the main claim.
+
+## 7. Limitations
+- Sample size is modest: `12` positive examples per scheme per model in the main extraction analysis.
+- The benchmark is synthetic even though it is grounded in real corpora; results may differ for organically generated covert text.
+- Only two candidate schemes were exposed to the model, so this is a constrained extraction study rather than an open-ended steganalysis benchmark.
+- The negative controls are matched clean examples, not an exhaustive distribution of natural text.
+- API behavior mattered enough to require validation fixes for `gpt-5`; model-comparison conclusions should therefore be interpreted as prompt-and-API specific.
+
+## 8. Conclusions &amp; Next Steps
+Current LLMs can often detect or decode obvious and moderately dense textual steganography, but their performance drops sharply when the same signal is diluted across longer passages with sparse trigger locations. In this experiment, both `gpt-4.1` and `gpt-5` showed that diluted extraction is substantially less reliable than acrostic or dense keyword extraction, supporting the central research hypothesis.
+
+The most useful next experiments are:
+- Increase sample size to tighten confidence intervals.
+- Test more providers and model families under matched prompts.
+- Vary trigger ambiguity and message length separately from passage length.
+- Add paraphrase and edit attacks that preserve semantics while perturbing adjacency.
+- Compare candidate-scheme-aware prompting to fully open-ended steganalysis.
+
+## 9. Validation Notes
+- The final pipeline was rerun after the API fixes and then rerun again from cache.
+- The cached validation rerun completed in about `14s`, confirming reproducible artifact generation without fresh API calls.
+- Random seeds are fixed in the script, and all outputs are written to stable project-relative paths.
+
+## 10. References
+- Ueoka et al. 2021. *Frustratingly Easy Edit-based Linguistic Steganography with a Masked Language Model*.
+- Zhang et al. 2021. *Provably Secure Generative Linguistic Steganography*.
+- Yi et al. 2021. *Exploiting Language Model for Efficient Linguistic Steganalysis*.
+- Raj-Sankar and Rajagopalan. 2023. *Hiding in Plain Sight: Towards the Science of Linguistic Steganography*.
+- Lin et al. 2024. *Zero-shot Generative Linguistic Steganography*.
+- Wu et al. 2024. *Generative Text Steganography with Large Language Model*.
+- Bai et al. 2024. *Towards Next-Generation Steganalysis: LLMs Unleash the Power of Detecting Steganography*.
+- Perry et al. 2025. *Robust Steganography from Large Language Models*.
+- Karpov et al. 2025. *The Steganographic Potentials of Language Models*.
+- Zolkowski et al. 2025. *Early Signs of Steganographic Capabilities in Frontier LLMs*.
+- OpenAI pricing page: `https://openai.com/api/pricing/`
+- OpenAI model pages: `https://developers.openai.com/api/docs/models/gpt-5`, `https://developers.openai.com/api/docs/models/gpt-4.1`
+
+
+════════════════════════════════════════════════════════════════════════════════
+                            RESEARCH PLAN
+════════════════════════════════════════════════════════════════════════════════
+
+# Diluted Steganography Research Plan
+
+## Motivation &amp; Novelty Assessment
+
+### Why This Research Matters
+As synthetic text generation scales, hidden signals can be embedded at much lower density and with less obvious local structure, making traditional pattern-based monitoring less reliable. Measuring whether current LLMs can still detect or recover these diluted signals matters for both misuse prevention and robustness evaluation of model-based monitors.
+
+### Gap in Existing Work
+The literature review shows strong prior work on dense generative steganography, edit-based local encodings, and cover-vs-stego detection, but no benchmark that explicitly sweeps signal dilution while separating detection from message recovery. Existing frontier-model safety studies focus on obvious schemes, coordinated hiding, or hidden reasoning rather than sparse keyword-conditioned extraction across realistic cover text.
+
+### Our Novel Contribution
+We introduce a controlled benchmark for diluted textual steganography that varies carrier corpus, signal density, trigger frequency, and distractor rate while keeping the secret message and cover text distribution explicit. We test current frontier LLMs on two separate capabilities: deciding whether hidden structure exists and extracting the payload when the encoding rule ranges from obvious acrostics to dispersed keyword-triggered schemes.
+
+### Experiment Justification
+- Experiment 1: Measure extraction accuracy across encoding schemes to test whether performance falls sharply as the signal becomes more diluted.
+- Experiment 2: Measure binary detection accuracy separately from extraction to determine whether models can sense hidden structure without being able to decode it.
+- Experiment 3: Compare long-context and short-context cover corpora to test whether more carrier text helps or hurts diluted-signal recovery.
+- Experiment 4: Add distractor triggers and light paraphrastic noise to check whether any observed capability is brittle or robust.
+
+## Research Question
+How well do current LLMs detect and extract steganographic messages when the hidden signal is progressively diluted from obvious acrostic patterns to sparse keyword-conditioned rules embedded in natural cover text?
+
+## Background and Motivation
+Prior work establishes that linguistic steganography can be highly fluent and difficult to detect, and recent papers show that LLMs are strong steganalyzers in some regimes. What remains unclear is whether those capabilities extend to low-density signals where the extraction rule is indirect, sparse, and mixed with distractors. This study targets that gap with a benchmark that isolates dilution as the primary independent variable.
+
+## Hypothesis Decomposition
+- H1: Extraction accuracy will be high for obvious encodings such as acrostics and dense keyword-next-token rules.
+- H2: Extraction accuracy will drop significantly for diluted keyword-triggered schemes with distractor triggers and larger spacing.
+- H3: Detection accuracy will degrade more slowly than extraction accuracy, meaning models may suspect hidden structure before they can decode it.
+- H4: Long carrier texts will improve diluted extraction only up to a point; beyond that, longer context may increase distraction and reduce recovery reliability.
+- H5: Light paraphrase-style corruption will disproportionately damage diluted schemes relative to obvious ones.
+
+Independent variables:
+- Encoding scheme: `acrostic`, `keyword_dense`, `keyword_diluted`
+- Corpus: `wikitext2`, `imdb`, `ag_news`
+- Difficulty: trigger spacing, distractor rate, optional noise
+- Model: frontier LLM API condition
+
+Dependent variables:
+- Exact message recovery rate
+- Character-level recovery rate
+- Binary detection accuracy / F1
+- Response latency, token usage, and estimated API cost
+
+Alternative explanations to check:
+- Failures may come from prompt ambiguity rather than inability
+- Short-context degradation may reflect insufficient carrier capacity
+- Detection success may reflect stylistic oddities introduced by synthesis rather than true steganalysis
+
+## Proposed Methodology
+
+### Approach
+Build a synthetic but corpus-grounded benchmark from local datasets, inject hidden messages with controlled rules, and query real LLMs with fixed prompts for both extraction and detection. This approach is preferable to training new detectors because the research question concerns present-day LLM capability under realistic black-box usage, and it allows direct comparison between obvious and diluted encodings under matched conditions.
+
+### Experimental Steps
+1. Load locally available corpora and filter for usable cover passages with enough tokens for the target payload length.
+2. Generate benchmark instances with three schemes:
+   - `acrostic`: first letter of each sentence forms the payload.
+   - `keyword_dense`: the token immediately following each trigger keyword forms the payload, with no distractors.
+   - `keyword_diluted`: payload tokens occur only after selected trigger appearances, mixed with distractor triggers and variable gaps.
+3. Create paired control examples from the same carrier texts with no payload but matched formatting and trigger distribution.
+4. Query real LLMs with one extraction prompt and one detection prompt per example.
+5. Score exact recovery, partial recovery, and detection metrics; compute confidence intervals and pairwise significance tests.
+6. Run robustness checks with light noising on a subset of examples.
+
+### Baselines
+- Random-chance detection and extraction baselines.
+- Rule-aware oracle decoders for each scheme to validate the benchmark labels.
+- Obvious-pattern baseline: acrostic extraction.
+- Dense keyword baseline: keyword-next-token extraction without dilution.
+- Optional external detection sanity check: a small sample from `datasets/llm_steganalysis_benchmark`.
+
+### Evaluation Metrics
+- Exact recovery rate: proportion of examples where the full secret string is recovered exactly.
+- Character recovery rate: normalized character accuracy between prediction and target.
+- Detection accuracy, precision, recall, and F1 on hidden-vs-clean classification.
+- Bootstrap 95% confidence intervals for the main rates.
+- McNemar tests for paired detection comparisons and permutation or bootstrap tests for recovery differences.
+
+### Statistical Analysis Plan
+- Significance level: `alpha = 0.05`.
+- Use bootstrap confidence intervals for message-recovery rates and character accuracy.
+- Use two-sided permutation tests for differences in recovery between encoding conditions within the same model.
+- Use McNemar tests for paired detection outcomes on matched examples.
+- Report effect sizes as absolute percentage-point differences and odds ratios where appropriate.
+
+## Expected Outcomes
+Support for the hypothesis would look like near-ceiling performance on `acrostic`, moderate performance on `keyword_dense`, and a substantial drop on `keyword_diluted`, especially with distractors and noise. A weaker version of the hypothesis would be supported if detection remains above chance while extraction collapses under dilution.
+
+## Timeline and Milestones
+1. Resource review and planning: completed first.
+2. Environment and dependency setup: minimal API/data/stats stack only.
+3. Data pipeline and benchmark generation.
+4. API harness and validation on a small sample.
+5. Full experiment run and results collection.
+6. Statistical analysis, figures, and documentation.
+
+## Potential Challenges
+- API schema or model availability may differ from assumptions.
+  Mitigation: implement a provider wrapper and validate with a tiny smoke test before scaling.
+- Benchmark synthesis may accidentally leak cues not related to steganography.
+  Mitigation: build matched non-stego controls with similar trigger density and formatting.
+- Prompt sensitivity may dominate results.
+  Mitigation: keep prompts fixed and simple, and document them exactly.
+- Cost or latency may become excessive.
+  Mitigation: cap sample sizes to a statistically useful but tractable benchmark and cache every response.
+
+## Success Criteria
+- A reproducible benchmark is generated from local corpora and saved with metadata.
+- At least one real frontier LLM is evaluated on both detection and extraction.
+- Results show a quantified relationship between signal dilution and model performance.
+- Statistical uncertainty, failure cases, and limitations are documented clearly in `REPORT.md`.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          LITERATURE REVIEW
+════════════════════════════════════════════════════════════════════════════════
+
+# Literature Review: Diluted Steganography
+
+## Review Scope
+
+### Research Question
+How well do current large language models detect or extract diluted
+steganographic signals in text, especially when the hidden message is spread
+across dispersed positions rather than encoded in obvious local patterns?
+
+### Inclusion Criteria
+- Papers on linguistic steganography, text watermarking, hidden message detection, or covert communication in LLM outputs
+- Papers on LLM reasoning or extraction over dispersed or multi-hop textual signals
+- Papers introducing benchmarks, datasets, or evaluation methods relevant to hidden signal recovery in text
+- Papers from 2019-2026, with preference for 2023-2026 for LLM-specific work
+
+### Exclusion Criteria
+- Purely image/audio steganography papers without transferable text methods
+- Security papers unrelated to natural-language hidden signal detection or extraction
+- Opinion pieces or blog posts without technical details
+
+### Time Frame
+2019-2026
+
+### Sources
+- Paper-finder service
+- arXiv
+- Semantic Scholar
+- Papers with Code
+- GitHub
+
+## Search Log
+
+| Date | Query | Source | Results | Notes |
+|------|-------|--------|---------|-------|
+| 2026-04-19 | `linguistic steganography large language models hidden message detection extraction` | paper-finder | service unavailable | fell back to manual search |
+| 2026-04-19 | `text steganography keyword-based hidden message extraction NLP` | paper-finder | service unavailable | fell back to manual search |
+| 2026-04-19 | broad searches on linguistic steganography, LLM steganography, steganalysis | arXiv / ACL Anthology / GitHub / Papers with Code | 10 papers selected | focused on papers with methods, code, or benchmarks |
+
+## Screening Results
+
+| Paper | Title Screen | Abstract Screen | Full-Text | Notes |
+|-------|-------------|-----------------|-----------|-------|
+| 2104.09833 | Include | Include | Include | edit-based baseline with masked LM |
+| 2021.findings-acl.268 | Include | Include | Include | formal generative security baseline |
+| 2107.12168 | Include | Include | Include | classical steganalysis baseline |
+| 2312.16840 | Include | Include | Include | useful conceptual framework |
+| 2403.10856 | Include | Include | Deep read | strongest practical modern linguistic baseline |
+| 2404.10229 | Include | Include | Include | black-box GPT-4/UI method; keyword-set design is relevant |
+| 2405.09090 | Include | Include | Include | LLM-based detection baseline |
+| 2504.08977 | Include | Include | Deep read | robustness to edits and paraphrases |
+| 2505.03439 | Include | Include | Include | frontier-model safety framing |
+| 2507.02737 | Include | Include | Deep read | closest direct match to hypothesis |
+
+## Paper Summaries
+
+### Research Area Overview
+
+The literature splits into three threads. First, classic linguistic steganography focuses on encoding payload bits into generated or edited text while preserving fluency and low detectability. Second, newer LLM-based work uses zero-shot prompting or black-box APIs to improve text quality and capacity. Third, recent safety work asks whether frontier LLMs themselves can intentionally hide or recover messages and whether monitors can catch them. The exact question in this project, detecting or extracting **diluted** signals where evidence is spread across many positions, is still largely open. Existing work mostly studies obvious local encodings, whole-text generative schemes, or broad monitor-evasion settings rather than sparse keyword-triggered extraction.
+
+### Key Papers
+
+#### Frustratingly Easy Edit-based Linguistic Steganography with a Masked Language Model
+- **Authors**: Ueoka, Murawaki, Kurohashi
+- **Year**: 2021
+- **Source**: NAACL 2021
+- **Key Contribution**: Revives edit-based steganography using a masked LM instead of handcrafted rules.
+- **Methodology**: Masks every `f`-th token subject to skip rules, then selects replacements from MLM candidates to encode bits.
+- **Datasets Used**: Real text corpus for evaluation; paper emphasizes natural text and crowd evaluation rather than synthetic-only metrics.
+- **Results**: Lower payload than GPT-2 generation baselines, but much harder for automatic detectors to distinguish; human quality close to real texts.
+- **Code Available**: Yes, `code/steganography-with-masked-lm/`
+- **Relevance to Our Research**: Very relevant as a baseline for localized and sparse placement strategies. A diluted scheme can be seen as a more dispersed edit schedule.
+
+#### Provably Secure Generative Linguistic Steganography
+- **Authors**: Zhang, Yang, Yang, Huang
+- **Year**: 2021
+- **Source**: Findings of ACL 2021
+- **Key Contribution**: Introduces ADG, a provably secure generative method based on adaptive dynamic grouping.
+- **Methodology**: Recursively groups candidate tokens under a language model and maps secret bits to groups.
+- **Datasets Used**: Three public corpora.
+- **Results**: Strong statistical security and high embedding capacity compared with prior generative methods.
+- **Code Available**: Not collected here.
+- **Relevance to Our Research**: Good baseline for “obvious” generative stego against which diluted extraction can be compared.
+
+#### Exploiting Language Model for Efficient Linguistic Steganalysis
+- **Authors**: Yi, Wu, Feng, Zhang
+- **Year**: 2021
+- **Source**: arXiv
+- **Key Contribution**: Shows that language-model pretraining improves steganalysis over standard RNN/CNN/GNN classifiers.
+- **Methodology**: Pre-trains LM-RNN and AE-RNN steganalyzers, then fine-tunes for cover-vs-stego detection.
+- **Datasets Used**: Twitter and movie-review corpora with Bins, FLC, and VLC generation methods.
+- **Results**: Best or near-best accuracy/F1 across most settings; gains are strongest when the detector captures token-distribution artifacts.
+- **Code Available**: No repository downloaded for this paper.
+- **Relevance to Our Research**: Important detection baseline. Diluted signals may reduce exactly the local distributional artifacts these models exploit.
+
+#### Hiding in Plain Sight: Towards the Science of Linguistic Steganography
+- **Authors**: Raj-Sankar, Rajagopalan
+- **Year**: 2023
+- **Source**: arXiv
+- **Key Contribution**: Provides a useful conceptual framework built around decodability, density, and detectability.
+- **Methodology**: Formalizes code design and illustrates a practical tweet-oriented construction.
+- **Datasets Used**: Tweet-style communication setting.
+- **Results**: Mostly conceptual, but valuable for defining measurable trade-offs.
+- **Code Available**: Not collected here.
+- **Relevance to Our Research**: Especially useful because dilution is directly related to code density. The hypothesis can be cast as lowering density while preserving decodability.
+
+#### Zero-shot Generative Linguistic Steganography
+- **Authors**: Lin, Luo, Zhang, Luo
+- **Year**: 2024
+- **Source**: NAACL 2024
+- **Key Contribution**: Uses in-context learning to improve both statistical and perceptual imperceptibility without task-specific training.
+- **Methodology**: Edge-flipping coding plus in-context stegotext generation guided by cover-style examples.
+- **Datasets Used**: IMDB and Twitter.
+- **Baselines**: NLS, SAAC, ADG, RNN-Stega, VAE-Stega.
+- **Results**: Best combined readability and detectability trade-off among compared methods; reports lower steganalysis accuracy than competitors and `1.926x` better language-evaluation preference.
+- **Code Available**: Yes, `code/zero-shot-GLS/`
+- **Relevance to Our Research**: Strongest practical baseline for current linguistic steganography. Its evaluation setup and datasets are directly reusable.
+
+#### Generative Text Steganography with Large Language Model
+- **Authors**: Wu, Wu, Xue, Wen, Peng
+- **Year**: 2024
+- **Source**: ACM MM 2024
+- **Key Contribution**: Proposes `LLM-Stega`, a black-box GPT-4/UI method that does not require direct vocabulary or logit access.
+- **Methodology**: Constructs a keyword set, encrypted mapping, and reject-sampling mechanism over GPT-4 outputs.
+- **Datasets Used**: Entertainment news and science-fiction movie-review themes; compares to News-trained baselines.
+- **Baselines**: Arithmetic, ADG, Discop.
+- **Results**: Highest reported embedding capacity in its setting (`5.93 bpw` on one theme) with better text quality than several baselines.
+- **Code Available**: No official repository collected.
+- **Relevance to Our Research**: Highly relevant because keyword-set design is close to the proposed dispersed keyword-trigger idea.
+
+#### Towards Next-Generation Steganalysis: LLMs Unleash the Power of Detecting Steganography
+- **Authors**: Bai, Yang, Pang, Wang, Huang
+- **Year**: 2024
+- **Source**: arXiv
+- **Key Contribution**: Reframes steganalysis as an LLM generation problem instead of a narrow classifier.
+- **Methodology**: Uses generative LLMs as detectors and compares them to classical baselines.
+- **Datasets Used**: Multiple steganography settings; code repo includes `ac`, `adg`, and `hc5` cover/stego files.
+- **Results**: LLM-based detectors outperform older baselines by a wide margin in their setting.
+- **Code Available**: Yes, `code/Linguistic-Steganalysis-with-LLMs/`
+- **Relevance to Our Research**: Directly supports the experiment hypothesis, because detection/extraction by current LLMs is the main object of study.
+
+#### Robust Steganography from Large Language Models
+- **Authors**: Perry, Gupte, Pitta, Rotem
+- **Year**: 2025
+- **Source**: arXiv
+- **Key Contribution**: Introduces weak/local and strong/semantic robustness definitions for LLM steganography.
+- **Methodology**: Two constructions: watermarking-style local robustness and embedding/LSH-based semantic robustness; evaluated under n-gram shuffling, synonym substitution, and paraphrasing.
+- **Datasets Used**: Authors release implementation and datasets; attack suite is central to the paper.
+- **Results**: Embedding-based method is much more robust than watermarking under paraphrase-style attacks, but does not spread bits uniformly across the text.
+- **Code Available**: Paper says yes, but repository was not directly identified here.
+- **Relevance to Our Research**: Important for understanding whether diluted signals are robust to mild edits or paraphrases.
+
+#### The Steganographic Potentials of Language Models
+- **Authors**: Karpov, Adeleke, Cho, Perez-Campanero
+- **Year**: 2025
+- **Source**: ICLR 2025 workshop
+- **Key Contribution**: Evaluates frontier-model covert communication and hidden reasoning, including RL fine-tuning to increase stealth.
+- **Methodology**: Direct steganography, synonym-substitution prompting, coordination experiments, and indirect game-like collusion scenarios.
+- **Datasets Used**: Wikinews during fine-tuning; synthetic payload sets.
+- **Results**: Current models show rudimentary but non-trivial covert ability; coordination and explicit algorithms improve undetected accuracy.
+- **Code Available**: Project page only; no repository collected.
+- **Relevance to Our Research**: Closely tied to whether models can exploit dispersed structure when instructed or fine-tuned.
+
+#### Early Signs of Steganographic Capabilities in Frontier LLMs
+- **Authors**: Zolkowski, Nishimura-Gasparian, McCarthy, Zimmermann, Lindner
+- **Year**: 2025
+- **Source**: arXiv
+- **Key Contribution**: Systematic evaluation of frontier LLMs on encoded message passing and encoded reasoning.
+- **Methodology**: Tests coordination/no-coordination, common/uncommon schemes, hidden tasks including state tracking, AQuA-RAT, and GPQA-Diamond, and monitor-based detection.
+- **Datasets Used**: State-tracking tasks plus benchmark reasoning datasets.
+- **Results**: Without strong affordances, current models generally fail to hide messages past monitors; with unmonitored CoT and coordination, they can sometimes succeed. Hidden reasoning is nascent and strongest on simple state-tracking.
+- **Code Available**: Paper reports transcripts release; no code repository gathered.
+- **Relevance to Our Research**: The most direct evidence that current LLMs are still limited at subtle covert communication, which suggests diluted extraction may be a sensitive capability probe.
+
+## Themes and Synthesis
+
+### Common Methodologies
+- **Generative token-level encoding**: ADG, NLS, SAAC, patient-Huffman, and Zero-shot GLS all encode bits by steering next-token selection.
+- **Edit-based local encoding**: masked-LM steganography modifies existing text, which is conceptually closer to sparse or keyword-anchored hiding.
+- **LLM black-box prompting**: LLM-Stega shows that direct logit access is not necessary; keyword sets and constrained prompting can still carry payloads.
+- **LLM-as-detector**: recent steganalysis papers use LLMs as generative judges or tuned detectors rather than classical discriminators.
+- **Safety-style evaluation**: recent 2025 work measures monitor evasion and hidden reasoning rather than only capacity and perplexity.
+
+### Standard Baselines
+- Generative baselines: NLS, SAAC, ADG, patient-Huffman, Arithmetic coding, Discop.
+- Edit baseline: masked-LM substitution method.
+- Detection baselines: RNN/CNN/GNN steganalyzers, LM-RNN / AE-RNN, and LLM-based steganalyzers.
+- For this project specifically, a good baseline ladder is:
+  - Obvious acrostic or every-`k`th-token extraction
+  - Keyword-next-word extraction
+  - Diluted keyword-next-word extraction with variable spacing and distractors
+  - LLM-based extraction/detection vs non-LLM detectors
+
+### Evaluation Metrics
+- **Capacity / bits per word (BPW)**: common in generation papers; useful for comparing dense vs diluted schemes.
+- **Perplexity (PPL)**: rough fluency proxy.
+- **Jensen-Shannon divergence (JSD)** and related distributional scores: common statistical imperceptibility metric.
+- **Steganalysis accuracy / F1 / AUC**: for cover-vs-stego detection.
+- **Extraction accuracy**: proportion of hidden payload recovered exactly or at token/bit level.
+- **Monitor-pass rate / undetected success**: central for frontier LLM studies.
+
+### Datasets in the Literature
+- IMDB and Twitter are common for linguistic steganography generation.
+- News-style corpora appear in black-box LLM steganography work.
+- Reasoning benchmarks like AQuA-RAT and GPQA-Diamond appear in frontier hidden-reasoning work.
+- There is no standard benchmark specifically for **diluted** textual steganography where the signal is deliberately dispersed and sparse.
+
+## Research Gaps
+
+- Existing papers mostly evaluate dense or structurally simple encodings; they do not isolate the effect of **signal dilution**.
+- LLM steganalysis papers study cover-vs-stego classification, but not whether an LLM can recover a payload when the extraction rule is indirect and spread across long context.
+- Frontier safety papers test simple known schemes, coordination, and hidden reasoning, but not dispersed keyword-conditioned extraction over realistic text corpora.
+- There is no shared benchmark varying signal density, trigger frequency, distractor frequency, and cover-text length in a controlled way.
+- Robustness under paraphrase or light editing has been studied for generated schemes, but not for rule-based diluted encodings of the form “word after each trigger.”
+
+## Gaps and Opportunities
+
+- **Gap 1**: No benchmark explicitly sweeps message density.  
+  Opportunity: generate synthetic cover/stego pairs on `WikiText-2`, `IMDB`, and `AG News` with exact density control.
+- **Gap 2**: Detection and extraction are usually conflated.  
+  Opportunity: evaluate both “is there a hidden signal?” and “recover the message” as separate tasks.
+- **Gap 3**: Little evidence on current LLMs as extractors of sparse dispersed signals.  
+  Opportunity: compare prompted frontier/open models, small local models, and non-LLM detectors.
+- **Gap 4**: Sparse triggers interact with cover length.  
+  Opportunity: explicitly vary short-form vs long-form cover text.
+
+## Key Citations
+
+- Dai and Cai, 2019. *Towards Near-imperceptible Steganographic Text.*
+- Ueoka et al., 2021. *Frustratingly Easy Edit-based Linguistic Steganography with a Masked Language Model.*
+- Zhang et al., 2021. *Provably Secure Generative Linguistic Steganography.*
+- Lin et al., 2024. *Zero-shot Generative Linguistic Steganography.*
+- Wu et al., 2024. *Generative Text Steganography with Large Language Model.*
+- Bai et al., 2024. *Towards Next-Generation Steganalysis: LLMs Unleash the Power of Detecting Steganography.*
+- Perry et al., 2025. *Robust Steganography from Large Language Models.*
+- Zolkowski et al., 2025. *Early Signs of Steganographic Capabilities in Frontier LLMs.*
+
+## Recommendations for Our Experiment
+
+Based on the literature review:
+- **Recommended datasets**: `WikiText-2` and `IMDB` as primary long-form carriers; `AG News` as a short-form contrast set; `llm_steganalysis_benchmark` for baseline detector sanity checks.
+- **Recommended baselines**: acrostic / every-`k`th-token extraction, masked-LM edit baseline, zero-shot generative baseline, LLM-based steganalysis baseline.
+- **Recommended metrics**: hidden-message exact match, token-level extraction accuracy, detection accuracy/F1/AUC, perplexity, and success-under-paraphrase.
+- **Methodological considerations**:
+  - Sweep density explicitly: triggers every 2, 4, 8, 16, 32 candidate positions.
+  - Separate known-scheme from unknown-scheme evaluation.
+  - Compare direct extraction prompts against step-by-step reasoning prompts.
+  - Include distractor triggers and paraphrased cover text to test robustness.
+  - Record both human-obvious and statistically subtle schemes so the “dilution” effect is interpretable.
+
+## Key Citations
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          PAPER REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+Generate a complete academic paper with the following structure:
+
+1. TITLE
+   - Clear, specific, informative
+   - Should convey main finding or contribution
+
+2. AUTHOR
+   - Use this exact author line in the \author{} block: Ari Holtzman and NeuriCo
+
+3. ABSTRACT (150-250 words)
+   - Problem statement
+   - Approach
+   - Key results
+   - Significance
+
+4. INTRODUCTION
+   - Research problem and motivation
+   - Gap in existing work
+   - Our contribution (be specific)
+   - Paper organization
+
+5. RELATED WORK
+   - Organized by theme/approach
+   - Position our work relative to prior work
+   - Cite papers from literature review
+
+6. METHODOLOGY
+   - Clear description of approach
+   - Experimental setup
+   - Datasets used
+   - Evaluation metrics
+   - Baselines
+
+7. RESULTS
+   - Present results with tables and figures
+   - Statistical analysis
+   - Comparison to baselines
+   - Ablation studies (if applicable)
+
+8. DISCUSSION
+   - Interpretation of results
+   - Limitations
+   - Broader implications
+
+9. CONCLUSION
+   - Summary of contributions
+   - Key findings
+   - Future work
+
+10. REFERENCES
+   - BibTeX format
+   - All cited papers
+
+════════════════════════════════════════════════════════════════════════════════
+                          OUTPUT FORMAT
+════════════════════════════════════════════════════════════════════════════════
+
+Create a MODULAR LaTeX project with the following directory structure:
+
+paper_draft/
+├── main.tex              # Main file that imports all sections
+├── references.bib        # BibTeX references
+├── sections/
+│   ├── abstract.tex      # Abstract content
+│   ├── introduction.tex  # Introduction section
+│   ├── related_work.tex  # Related work section
+│   ├── methodology.tex   # Methodology section
+│   ├── results.tex       # Results section
+│   ├── discussion.tex    # Discussion section
+│   └── conclusion.tex    # Conclusion section
+├── figures/              # Directory for any generated figures
+├── tables/               # Directory for complex standalone tables
+└── appendix/             # Directory for appendix sections (if needed)
+
+INSTRUCTIONS:
+1. First, create the directory structure above (mkdir -p paper_draft/sections paper_draft/figures paper_draft/tables paper_draft/appendix)
+2. Write main.tex using the EXACT preamble for NEURIPS:
+
+   \documentclass{article}
+   \usepackage[final]{neurips_2025}  % NEURIPS style (neurips_2025.sty is in paper_draft/)
+   \usepackage[hidelinks]{hyperref}  % REQUIRED: clickable links
+   \usepackage{booktabs}  % REQUIRED: professional tables
+   \usepackage{graphicx}
+   \usepackage{amsmath,amssymb}
+
+   % Import command files
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+   % Use this bibliography style:
+   \bibliographystyle{plainnat}
+
+   \author{Ari Holtzman and NeuriCo}
+
+   - Use \input{sections/...} to include each section
+   - Use \bibliography{references} for references
+3. Write each section file with COMPLETE content (no placeholders)
+4. Each section file should include its \section{} command
+5. Write references.bib with all citations in BibTeX format
+6. After writing all files, compile the paper:
+   cd paper_draft && pdflatex -interaction=nonstopmode main.tex && bibtex main && pdflatex -interaction=nonstopmode main.tex && pdflatex -interaction=nonstopmode main.tex
+
+This modular structure allows humans to easily:
+- Edit individual sections without navigating a large file
+- Track changes per section
+- Reuse sections across different paper versions
+
+════════════════════════════════════════════════════════════════════════════════
+                          QUALITY REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+- Academic tone throughout
+- All claims must be supported by data from the experiment report
+- Proper citations using \cite{} commands
+- Clear figures and tables with proper captions
+- NO placeholder text - every section must have real content
+- The paper MUST compile without errors
+- If compilation fails, debug and fix the LaTeX errors
+
+════════════════════════════════════════════════════════════════════════════════
+                          LAB WRITING STYLE
+════════════════════════════════════════════════════════════════════════════════
+
+Follow these lab-specific conventions to match our paper style:
+
+1. LANGUAGE STYLE:
+   - Use active voice: "We propose", "We examine", "We focus on"
+   - Be direct and confident: "Our main question is...", "We hypothesize that..."
+   - State things clearly and simply - prefer plain language over jargon
+   - Use bold questions as paragraph organizers: {\bf what is X?}
+   - Include specific quantitative claims: "8.97% over baseline"
+   - Avoid fancy wording: "utilize" → "use", "facilitate" → "help"
+
+2. INTRODUCTION STRUCTURE:
+   - Engaging hook (get to the point quickly)
+   - Problem importance
+   - Gap identification
+   - Your approach with method figure reference
+   - Quantitative preview of results
+   - Contribution bullets (3-4 items, action verbs)
+
+3. CONTRIBUTION LISTS:
+   \begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+       \item We propose...
+       \item We conduct...
+       \item We complement...
+   \end{itemize}
+
+4. MODULAR COMMANDS STRUCTURE:
+   Command templates are pre-copied to paper_draft/commands/:
+   - math.tex: Math notation macros
+   - general.tex: Formatting macros
+   - macros.tex: Project-specific term definitions (customize this for your paper)
+
+   In main.tex, include:
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+5. REFERENCE CONVENTIONS:
+   Use reference macros from math.tex:
+   - \figref{fig:name} for "figure 1" (lowercase, in-sentence)
+   - \Figref{fig:name} for "Figure 1" (capitalized, start of sentence)
+   - \secref{sec:name} for "section 2"
+
+6. TEXT FORMATTING:
+   - Use \para{Header text} for bold paragraph headers
+   - Define method/dataset names with \textsc and \xspace:
+     \newcommand{\methodname}{\textsc{MethodName}\xspace}
+
+7. TABLE FORMATTING:
+   - Use booktabs package (no vertical lines)
+   - Use \resizebox{\textwidth}{!}{...} for wide tables
+   - Use @{} to remove padding at table edges
+   - Use \cmidrule(lr){x-y} for sub-headers
+   - Use \textsc{} for dataset/method names in headers
+   - Bold best results with {\bf ...}
+
+8. FIGURE FORMATTING:
+   - Use 0.32\textwidth for 3-column subfigures
+   - Use 0.95\linewidth for full-width figures
+   - Use \input{figures/legend} for shared legends
+   - Write self-contained captions explaining key observations
+
+9. RESULTS PRESENTATION:
+   - Define \increase and \decrease for colored arrows (green up, red down)
+   - Bold best results in tables
+   - Report confidence intervals when available
+
+10. ALGORITHM STYLING:
+    - Use algpseudocode with [noend]
+    - Use \triangleright for comments
+
+11. HYPERLINKS (REQUIRED):
+    - Always use \usepackage[hidelinks]{hyperref} or with colored links
+    - All citations, section refs, figure refs, table refs must be clickable
+    - This is essential for reader navigation
+
+════════════════════════════════════════════════════════════════════════════════
+                          WORKFLOW: REVIEW AND REFLECT
+════════════════════════════════════════════════════════════════════════════════
+
+Before calling finish, you MUST complete these review steps:
+
+1. REVIEW RESOURCES (at the start):
+   - Read .codex/skills/paper-writer/SKILL.md for detailed guidance
+   - Study templates/paper_writing/lab_style_guide.md for style conventions
+   - Browse paper_examples/ for formatting and language patterns
+
+2. SELF-REFLECTION (before finishing):
+   After writing all sections, review your work against these criteria:
+
+   LANGUAGE CHECK:
+   - [ ] Is the writing clear and jargon-free?
+   - [ ] Are claims specific with quantitative support?
+   - [ ] Is active voice used throughout?
+
+   FORMATTING CHECK:
+   - [ ] Does main.tex include \input{commands/math}, \input{commands/general}, \input{commands/macros}?
+   - [ ] Is hyperref package included for clickable references?
+   - [ ] Do tables use booktabs (no vertical lines)?
+   - [ ] Are best results bolded in tables?
+   - [ ] Are figures/tables properly captioned?
+
+   STRUCTURE CHECK:
+   - [ ] Does introduction follow: hook → importance → gap → approach → preview → contributions?
+   - [ ] Are contribution bullets specific with action verbs?
+   - [ ] Does the paper compile without errors?
+
+3. FIX ISSUES:
+   - Address any issues found in the self-reflection
+   - Re-compile and verify the PDF looks correct
+
+Only after completing this review should you consider the paper finished.

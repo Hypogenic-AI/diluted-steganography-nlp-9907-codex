@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "stages": {
+    "resource_finder": {
+      "success": true,
+      "completion_marker": "/workspaces/diluted-steganography-nlp-9907-codex/.resource_finder_complete",
+      "outputs": {
+        "literature_review": "/workspaces/diluted-steganography-nlp-9907-codex/literature_review.md",
+        "resources_catalog": "/workspaces/diluted-steganography-nlp-9907-codex/resources.md",
+        "papers_dir": "/workspaces/diluted-steganography-nlp-9907-codex/papers",
+        "datasets_dir": "/workspaces/diluted-steganography-nlp-9907-codex/datasets",
+        "code_dir": "/workspaces/diluted-steganography-nlp-9907-codex/code"
+      },
+      "log_file": "/workspaces/diluted-steganography-nlp-9907-codex/logs/resource_finder_codex.log",
+      "transcript_file": "/workspaces/diluted-steganography-nlp-9907-codex/logs/resource_finder_codex_transcript.jsonl",
+      "elapsed_time": 601.749261379242
+    },
+    "experiment_runner": {
+      "success": true,
+      "return_code": 0,
+      "elapsed_time": 2134.801347255707,
+      "log_file": "/workspaces/diluted-steganography-nlp-9907-codex/logs/execution_codex.log",
+      "transcript_file": "/workspaces/diluted-steganography-nlp-9907-codex/logs/execution_codex_transcript.jsonl"
+    }
+  },
+  "work_dir": "/workspaces/diluted-steganography-nlp-9907-codex"
+}

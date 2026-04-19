@@ -1,0 +1,76 @@
+%%%%% PROJECT-SPECIFIC MACROS %%%%%
+% Define your project-specific terms here
+% Import with: \input{commands/macros}
+%
+% INSTRUCTIONS:
+% 1. Use \textsc{} for method/dataset/model names (small caps)
+% 2. Add \xspace at the end for automatic spacing
+% 3. Group related terms together
+% 4. Use consistent naming conventions
+
+\usepackage{xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% METHOD NAMES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\benchmark}{\textsc{DilutedStegBench}\xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DATASET NAMES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\wikitext}{\textsc{WikiText-2}\xspace}
+\newcommand{\imdb}{\textsc{IMDB}\xspace}
+\newcommand{\agnews}{\textsc{AG News}\xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MODEL NAMES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\gptfourone}{\textsc{gpt-4.1}\xspace}
+\newcommand{\gptfive}{\textsc{gpt-5}\xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% BASELINE NAMES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\acrostic}{\textsc{Acrostic}\xspace}
+\newcommand{\densekw}{\textsc{Keyword-Dense}\xspace}
+\newcommand{\dilutedkw}{\textsc{Keyword-Diluted}\xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ABBREVIATIONS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\ie}{i.e.,\xspace}
+\newcommand{\eg}{e.g.,\xspace}
+\newcommand{\etal}{et al.\xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DOMAIN-SPECIFIC TERMS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Terms specific to your research domain
+% Keep consistent formatting throughout the paper
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% USAGE EXAMPLES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% GOOD:
+%   \newcommand{\hypogenic}{\textsc{HypoGeniC}\xspace}
+%   Usage: "We propose \hypogenic to generate hypotheses."
+%   Result: "We propose HypoGeniC to generate hypotheses."
+%
+% GOOD:
+%   \newcommand{\ours}{{\bf HypoGeniC}\xspace}
+%   Usage: "Our method, \ours, outperforms baselines."
+%   Result: "Our method, HypoGeniC, outperforms baselines."
+%
+% BAD (no \xspace):
+%   \newcommand{\hypogenic}{\textsc{HypoGeniC}}
+%   Usage: "\hypogenic outperforms..."
+%   Result: "HypoGeniCoutperforms..." (missing space!)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

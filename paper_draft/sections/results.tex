@@ -1,0 +1,37 @@
+\section{Results}
+\label{sec:results}
+
+\input{tables/main_results}
+
+\para{Dilution hurts extraction more than detection.} \Tabref{tab:main_results} shows the central pattern. For both models, \dilutedkw\ is the hardest extraction condition by a wide margin. \gptfourone drops from 0.75 exact recovery on \densekw\ to 0.25 on \dilutedkw, while \gptfive drops from 0.50 to 0.17. Detection also worsens under dilution, but the decline is smaller. This creates a clear detection-extraction gap, especially for \gptfourone, which still reaches 0.79 detection accuracy on diluted passages.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/detection_accuracy_by_scheme.png}
+    \caption{Detection accuracy by scheme and model. Detection remains relatively strong across all three schemes, although performance drops on diluted keyword signals. The gap between \Tabref{tab:main_results} and this figure is the main qualitative result of the paper: models can often notice suspicious structure before they can decode the secret exactly.}
+    \label{fig:detection_accuracy}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/extraction_exact_by_scheme.png}
+    \caption{Exact message recovery by scheme and model. Both models follow the same ranking: \densekw\ and \acrostic\ outperform \dilutedkw. The drop is especially sharp for \gptfive, which reaches only 0.17 exact recovery in the diluted setting.}
+    \label{fig:extraction_exact}
+\end{figure}
+
+\input{tables/significance}
+
+\para{Statistical comparisons.} \Tabref{tab:significance} reports Fisher exact tests on pooled exact-recovery counts. The strongest confirmatory result is the \gptfourone dense-versus-diluted comparison ($p=0.039$), where exact recovery improves by 50 percentage points. The same directional trend appears in all other comparisons, but the small sample size leaves the remaining tests underpowered.
+
+\input{tables/corpus_results}
+
+\para{Corpus effects are real but not uniform.} \Tabref{tab:corpus_results} shows that longer context does not automatically help. \gptfourone performs best on \wikitext\ for \acrostic\ and \densekw, but it still falls to 0.50 on diluted \wikitext. \gptfive is even less stable: it reaches 0.75 exact recovery on \wikitext\ acrostics yet drops to 0.00 on diluted \wikitext. This pattern suggests that longer passages help only when the hidden rule remains easy to keep in local working memory.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/extraction_heatmap.png}
+    \caption{Exact recovery heatmap by corpus, scheme, and model. The heatmap highlights two consistent facts: diluted extraction is weak across corpora, and model performance interacts with corpus length in a non-monotonic way rather than improving uniformly with more context.}
+    \label{fig:heatmap}
+\end{figure}
+
+\para{Confidence intervals and external sanity check.} Per-cell bootstrap intervals are wide because each extraction cell contains only four positive examples and each detection cell contains eight total examples. Many extraction intervals therefore span most of the unit interval. The external sanity check on 24 benchmark examples is near chance for both models and is not part of our main claim. We interpret it as a prompt-alignment limitation rather than evidence that the models cannot detect steganography in general.

@@ -1,0 +1,20 @@
+\begin{table*}[t]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+Model & Scheme & Det. Acc. & Precision & Recall & F1 & Exact Rec. & Char. Acc. \\
+\midrule
+\gptfourone & \acrostic & 0.875 & 0.909 & 0.833 & 0.870 & 0.667 & 0.861 \\
+\gptfourone & \densekw & {\bf 0.917} & 0.857 & 1.000 & {\bf 0.923} & {\bf 0.750} & {\bf 0.958} \\
+\gptfourone & \dilutedkw & 0.792 & {\bf 1.000} & 0.583 & 0.737 & 0.250 & 0.597 \\
+\midrule
+\gptfive & \acrostic & {\bf 0.958} & {\bf 1.000} & 0.917 & {\bf 0.957} & {\bf 0.583} & 0.875 \\
+\gptfive & \densekw & 0.792 & 0.706 & {\bf 1.000} & 0.828 & 0.500 & {\bf 0.889} \\
+\gptfive & \dilutedkw & 0.750 & 0.667 & {\bf 1.000} & 0.800 & 0.167 & 0.486 \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Pooled main results across corpora. Detection metrics are aggregated over 24 examples per model-scheme pair, with 12 positives and 12 negatives. Extraction metrics use 12 positive examples per model-scheme pair. Best results within each model are in \textbf{bold}. Dilution hurts exact recovery much more than detection.}
+\label{tab:main_results}
+\end{table*}

@@ -1,0 +1,10 @@
+Decide whether the following short text is likely intentionally steganographic.
+
+Return only JSON with keys:
+  "contains_hidden_message": true or false
+  "confidence": integer from 0 to 100
+
+Text:
+<<<
+{text}
+>>>

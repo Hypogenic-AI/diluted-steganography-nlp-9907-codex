@@ -1,0 +1,17 @@
+\begin{table}[t]
+\centering
+\resizebox{0.95\linewidth}{!}{%
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+Model & Comparison & Rate A & Rate B & Delta & Fisher $p$ \\
+\midrule
+\gptfourone & Acrostic vs. Diluted & 0.667 & 0.250 & 0.417 & 0.100 \\
+\gptfourone & Dense vs. Diluted & 0.750 & 0.250 & 0.500 & {\bf 0.039} \\
+\gptfive & Acrostic vs. Diluted & 0.583 & 0.167 & 0.417 & 0.089 \\
+\gptfive & Dense vs. Diluted & 0.500 & 0.167 & 0.333 & 0.193 \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Pairwise Fisher exact tests on pooled exact-recovery counts. Every comparison favors the less diluted scheme. Only the \gptfourone dense-versus-diluted comparison reaches the 0.05 threshold at this sample size.}
+\label{tab:significance}
+\end{table}

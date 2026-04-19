@@ -1,0 +1,20 @@
+\begin{table}[t]
+\centering
+\resizebox{0.95\linewidth}{!}{%
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Model & Corpus & Acrostic & Dense & Diluted \\
+\midrule
+\gptfourone & \agnews & 0.50 & 0.50 & 0.25 \\
+\gptfourone & \imdb & 0.50 & 0.75 & 0.00 \\
+\gptfourone & \wikitext & {\bf 1.00} & {\bf 1.00} & {\bf 0.50} \\
+\midrule
+\gptfive & \agnews & {\bf 0.75} & 0.25 & {\bf 0.25} \\
+\gptfive & \imdb & 0.25 & {\bf 0.75} & {\bf 0.25} \\
+\gptfive & \wikitext & {\bf 0.75} & 0.50 & 0.00 \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Exact recovery by corpus and scheme. Longer context does not uniformly help: \wikitext\ is easiest for obvious schemes but still difficult in the diluted setting, especially for \gptfive. Best results within each model and scheme block are in \textbf{bold}.}
+\label{tab:corpus_results}
+\end{table}

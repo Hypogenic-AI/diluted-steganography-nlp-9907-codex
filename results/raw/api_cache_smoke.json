@@ -1,0 +1,50 @@
+{
+  "0b055601eeea4dc155edc552e6951461952edb9223ba162e6ce8d2dc10724999": {
+    "text": "",
+    "usage": {
+      "input_tokens": 12,
+      "input_tokens_details": {
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 12
+    },
+    "response_id": "resp_06174a1e7cdd06550069e55d2c5cb88193b807634c794bb37f",
+    "created_at": 1776639277.5265737
+  },
+  "d2bd59d79b29fd7fe1a1b639161a76148c7dee94a9689300b696706dbec00b4d": {
+    "text": "{\"ok\": true}",
+    "usage": {
+      "input_tokens": 13,
+      "input_tokens_details": {
+        "cached_tokens": 0
+      },
+      "output_tokens": 6,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 19
+    },
+    "response_id": "resp_07b430abddde342f0069e55d2d96f881938e2e27979512aeb5",
+    "created_at": 1776639278.2417166
+  },
+  "0aea3ea90a3ea03f61bb43b2d7f4ada362a8e89a1c29975e99ee853218e0d359": {
+    "text": "```json\n{\"ok\": true}\n```",
+    "usage": {
+      "input_tokens": 13,
+      "input_tokens_details": {
+        "cached_tokens": 0
+      },
+      "output_tokens": 10,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 23
+    },
+    "response_id": "resp_07799ede09c5b0010069e55d2e47cc8197acfc474115e5efb6",
+    "created_at": 1776639279.1598814
+  }
+}

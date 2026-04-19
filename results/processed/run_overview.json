@@ -1,0 +1,9 @@
+{
+  "synthetic_examples": 72,
+  "external_examples": 24,
+  "evaluation_rows": 264,
+  "models": [
+    "gpt-5",
+    "gpt-4.1"
+  ]
+}
